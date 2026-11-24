@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>بنك أسئلة القدرات - الرياضيات</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#1b2438;--mut:#6b7488;--pri:#2455d6;--pri2:#e8eefc;--ok:#16883c;--okbg:#e5f6ea;--bad:#c62828;--badbg:#fdeaea;--bd:#dfe4ee}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Tahoma,Arial,sans-serif;line-height:1.7}
+header{background:var(--pri);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;cursor:pointer}
+header .who{font-size:13px;opacity:.95}
+header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:13px}
+main{max-width:860px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:20px}h3{margin:0 0 8px;font-size:16px}
+label{display:block;margin:10px 0 4px;font-weight:600;font-size:14px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:70px}
+button.b{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+button.b.sec{background:var(--pri2);color:var(--pri)}
+button.b.red{background:var(--bad)}
+button.b:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.mut{color:var(--mut);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--bd);background:#fff;border-radius:20px;padding:6px 12px;cursor:pointer;font-size:14px;user-select:none}
+.chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.q{font-size:18px;white-space:pre-wrap}
+.q img,.opt img{max-width:100%;border-radius:8px;display:block;margin:8px 0}
+.opt{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--bd);border-radius:12px;padding:10px 12px;margin:8px 0;cursor:pointer;background:#fff;text-align:start}
+.opt.sel{border-color:var(--pri);background:var(--pri2)}
+.opt.ok{border-color:var(--ok);background:var(--okbg)}
+.opt.no{border-color:var(--bad);background:var(--badbg)}
+.opt .l{font-weight:700;min-width:22px}
+.opt span.t{white-space:pre-wrap;}
+.expl{background:#fff8e1;border:1px solid #f0d98a;border-radius:12px;padding:10px 12px;margin-top:10px;white-space:pre-wrap}
+.timer{font-weight:700;font-size:18px;background:#fff;border-radius:8px;padding:2px 10px;color:var(--ink)}
+.timer.low{color:var(--bad)}
+.nav{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.nav button{width:36px;height:36px;border-radius:8px;border:1px solid var(--bd);background:#fff;cursor:pointer;font:inherit}
+.nav button.ans{background:var(--pri2);border-color:var(--pri)}
+.nav button.cur{outline:2px solid var(--pri)}
+.score{font-size:42px;font-weight:800;color:var(--pri)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid var(--bd);padding:6px;text-align:start}
+.bar{height:10px;background:var(--bd);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--pri)}
+.tag{display:inline-block;background:var(--pri2);color:var(--pri);border-radius:6px;padding:0 8px;font-size:12px;margin-inline-end:6px}
+.warn{background:#fff3cd;border:1px solid #f0d98a;border-radius:10px;padding:8px 12px;font-size:14px}
+.canvaswrap{position:relative;display:inline-block;max-width:100%;overflow:auto;border:1px solid var(--bd);direction:ltr}
+.canvaswrap canvas{display:block;max-width:none}
+.sel-rect{position:absolute;border:2px dashed #e53935;background:rgba(229,57,53,.12);pointer-events:none}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.q-item{border:1px solid var(--bd);border-radius:10px;padding:8px 10px;margin:6px 0;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.q-item .tx{white-space:pre-wrap;overflow:hidden;max-height:3.4em;flex:1}
+</style>
+</head>
+<body>
+<header>
+  <h1 onclick="go('home')">📐 بنك أسئلة القدرات - الرياضيات</h1>
+  <div class="row"><span class="who" id="who"></span><button id="adminBtn" onclick="go('admin')">لوحة المعلم</button><button id="outBtn" onclick="logout()" style="display:none">خروج</button></div>
+</header>
+<main id="app"></main>
+
+<script>
+/* ================= إعدادات ================= */
+const CONFIG = {
+  // اختياري: رابط Google Apps Script (Web App) لاستقبال تسجيل الطلاب ونتائجهم في Google Sheet. اتركه فارغاً لحفظ البيانات على جهاز الطالب فقط.
+  WEBHOOK: "",
+  EXAM_MINUTES: 60,
+  PASS_PERCENT: 50,
+  QUESTIONS_FILE: "questions.json"
+};
+/* توزيع اختبار القدرات الكامل: 20 سؤالاً على 8 محاور */
+const TOPICS = [
+  {id:"real",name:"الأعداد الحقيقية",n:3},
+  {id:"poly",name:"الحدوديات",n:4},
+  {id:"ineq",name:"المتباينات",n:2},
+  {id:"abs",name:"القيمة المطلقة",n:1},
+  {id:"func",name:"الدوال",n:2},
+  {id:"geo",name:"تطبيقات: المساحات والحجوم والأوزان",n:2},
+  {id:"ratio",name:"تطبيقات: النسبة والتناسب والنسبة المئوية",n:3},
+  {id:"strat",name:"استراتيجيات الحل",n:3}
+];
+const TN = Object.fromEntries(TOPICS.map(t=>[t.id,t.name]));
+const L = ["أ","ب","ج","د"];
+
+/* أسئلة تجريبية مضمّنة (يستبدلها المعلم بأسئلته) */
+const SEED = [
+["real","قيمة √48 ÷ √3 تساوي:",["2","4","8","16"],1,"√48 ÷ √3 = √(48÷3) = √16 = 4."],
+["real","قيمة (3² × 3³) ÷ 3⁴ تساوي:",["1","3","9","27"],1,"عند ضرب القوى بنفس الأساس نجمع الأسس: 3⁵، ثم عند القسمة نطرح: 3⁵⁻⁴ = 3¹ = 3."],
+["poly","ناتج (x + 3)(x − 3) يساوي:",["x² + 9","x² − 9","x² − 6x + 9","x² + 6x − 9"],1,"هذا فرق بين مربعين: (a + b)(a − b) = a² − b². إذن x² − 9."],
+["poly","تحليل x² − 5x + 6 هو:",["(x − 2)(x − 3)","(x + 2)(x + 3)","(x − 1)(x − 6)","(x + 1)(x − 6)"],0,"نبحث عن عددين حاصل ضربهما 6 ومجموعهما −5، وهما −2 و −3. إذن (x − 2)(x − 3)."],
+["ineq","حل المتباينة 2x − 3 > 5 هو:",["x > 1","x > 4","x < 4","x > 8"],1,"نضيف 3 للطرفين: 2x > 8، ثم نقسم على 2: x > 4."],
+["ineq","حل المتباينة −3x ≥ 12 هو:",["x ≥ −4","x ≤ −4","x ≥ 4","x ≤ 4"],1,"عند القسمة على عدد سالب تنعكس إشارة المتباينة: x ≤ 12 ÷ (−3) = −4."],
+["abs","حل المعادلة |x − 2| = 5 هو:",["x = 7 فقط","x = −3 فقط","x = 7 أو x = −3","x = 3 أو x = −7"],2,"القيمة المطلقة تعطي حالتين: x − 2 = 5 فيكون x = 7، أو x − 2 = −5 فيكون x = −3."],
+["abs","حل المتباينة |x| < 3 هو:",["x < 3","−3 < x < 3","x < −3 أو x > 3","x > −3"],1,"|x| < a تعني −a < x < a. إذن −3 < x < 3."],
+["func","إذا كانت f(x) = 2x + 1 فإن f(3) تساوي:",["5","6","7","8"],2,"نعوّض x = 3: f(3) = 2(3) + 1 = 7."],
+["func","مجال الدالة f(x) = √(x − 4) هو:",["x ≥ 4","x > 4","x ≤ 4","جميع الأعداد الحقيقية"],0,"يجب أن يكون ما تحت الجذر غير سالب: x − 4 ≥ 0، إذن x ≥ 4."],
+["geo","مكعب طول حرفه 4 سم، حجمه بالسنتيمتر المكعب يساوي:",["16","48","64","96"],2,"حجم المكعب = الحرف³ = 4³ = 64 سم³."],
+["geo","مثلث قاعدته 10 سم وارتفاعه 6 سم، مساحته بالسنتيمتر المربع تساوي:",["16","30","60","120"],1,"مساحة المثلث = ½ × القاعدة × الارتفاع = ½ × 10 × 6 = 30."],
+["ratio","20% من 150 تساوي:",["20","25","30","35"],2,"20% = 0.2، و 0.2 × 150 = 30."],
+["ratio","سعر سلعة 80 ديناراً زاد بنسبة 25%. السعر الجديد بالدينار هو:",["90","100","105","120"],1,"الزيادة = 25% × 80 = 20، السعر الجديد = 80 + 20 = 100."],
+["ratio","قُسّم مبلغ 40 ديناراً بين شخصين بنسبة 3 : 5. نصيب الأكبر يساوي:",["15","20","25","30"],2,"مجموع الأجزاء 3 + 5 = 8، قيمة الجزء = 40 ÷ 8 = 5، نصيب الأكبر = 5 × 5 = 25."],
+["strat","إذا كان x + y = 10 و x − y = 2 فإن x تساوي:",["4","5","6","8"],2,"بجمع المعادلتين: 2x = 12، إذن x = 6."],
+["strat","متوسط أربعة أعداد 12. إذا كانت ثلاثة منها 8 و 10 و 12 فما العدد الرابع؟",["12","16","18","20"],2,"مجموع الأعداد الأربعة = 4 × 12 = 48. مجموع الثلاثة = 30. العدد الرابع = 48 − 30 = 18."]
+].map((a,i)=>({id:"s"+i,topic:a[0],text:a[1],opts:a[2],ans:a[3],expl:a[4]}));
+
+/* ================= تخزين ================= */
+const S = {
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){alert("تعذر الحفظ: "+e.message)}}
+};
+let BANK = [];
+let user = S.get("qd_user",null);
+let exam = null, timer = null, adminOK = false;
+
+async function loadBank(){
+  const local = S.get("qd_bank",null);
+  if(local && local.length){BANK=local;return}
+  try{const r=await fetch(CONFIG.QUESTIONS_FILE,{cache:"no-cache"});if(r.ok){const j=await r.json();if(Array.isArray(j)&&j.length){BANK=j;return}}}catch(e){}
+  BANK = SEED.slice();
+}
+const esc = s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = id=>document.getElementById(id);
+const shuffle = a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function post(payload){
+  if(!CONFIG.WEBHOOK)return;
+  try{fetch(CONFIG.WEBHOOK,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload)})}catch(e){}
+}
+
+/* ================= تنقل ================= */
+function go(v,arg){
+  if(timer){clearInterval(timer);timer=null}
+  if(["home","login","setup"].includes(v)&&exam&&exam.done)exam=null;
+  ({home:viewHome,login:viewLogin,setup:viewSetup,exam:viewExam,result:viewResult,admin:viewAdmin,history:viewHistory})[v](arg);
+  window.scrollTo(0,0);
+  $("who").textContent = user? user.name:"";
+  $("outBtn").style.display = user?"":"none";
+}
+function logout(){if(confirm("تسجيل الخروج؟")){user=null;localStorage.removeItem("qd_user");go("login")}}
+
+/* ================= تسجيل الطالب ================= */
+function viewLogin(){
+  $("app").innerHTML=`<div class="card"><h2>مرحباً بك 👋</h2>
+  <p class="mut">سجّل اسمك وبريدك الإلكتروني لتبدأ التدريب على أسئلة القدرات (الرياضيات).</p>
+  <label>الاسم الكامل</label><input id="nm" autocomplete="name">
+  <label>البريد الإلكتروني</label><input id="em" type="email" dir="ltr" autocomplete="email">
+  <p id="err" style="color:var(--bad);margin:8px 0 0"></p>
+  <div style="margin-top:12px"><button class="b" onclick="doLogin()">ابدأ</button></div></div>`;
+}
+function doLogin(){
+  const name=$("nm").value.trim(), email=$("em").value.trim().toLowerCase();
+  if(name.length<2){$("err").textContent="اكتب الاسم";return}
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("err").textContent="البريد الإلكتروني غير صحيح";return}
+  user={name,email,at:new Date().toISOString()};
+  S.set("qd_user",user);
+  const regs=S.get("qd_regs",[]);
+  if(!regs.find(r=>r.email===email)){regs.push(user)}
+  S.set("qd_regs",regs);
+  post({type:"register",name,email,at:user.at});
+  go("home");
+}
+
+/* ================= الرئيسية ================= */
+function viewHome(){
+  if(!user)return go("login");
+  const cnt = id=>BANK.filter(q=>q.topic===id).length;
+  const hist=S.get("qd_hist",[]).filter(h=>h.email===user.email);
+  $("app").innerHTML=`
+  <div class="card"><h2>أهلاً ${esc(user.name)}</h2>
+   <p class="mut">في البنك الآن ${BANK.length} سؤالاً.</p>
+   <div class="grid2">
+    <div class="card" style="margin:0"><h3>🎯 اختبار كامل (محاكاة حقيقية)</h3>
+      <p class="mut">20 سؤالاً من أربعة خيارات، مدة ${CONFIG.EXAM_MINUTES} دقيقة، بنفس توزيع المحاور في اختبار القدرات (جامعة الكويت). تظهر النتيجة والشرح في النهاية.</p>
+      <button class="b" onclick="go('setup','full')">ابدأ الاختبار الكامل</button></div>
+    <div class="card" style="margin:0"><h3>🧩 تدريب حسب الموضوع</h3>
+      <p class="mut">اختر موضوعاً أو أكثر. بعد كل إجابة يظهر لك الصح أو الخطأ، وشرح الحل عند الخطأ.</p>
+      <button class="b sec" onclick="go('setup','topic')">ابدأ التدريب</button></div>
+   </div></div>
+  <div class="card"><h3>المحاور وعدد الأسئلة</h3>
+   <table>${TOPICS.map(t=>`<tr><td>${t.name}</td><td>${cnt(t.id)} سؤال</td></tr>`).join("")}</table></div>
+  <div class="card"><h3>آخر محاولاتك</h3>${hist.length?`<table><tr><th>التاريخ</th><th>النوع</th><th>النتيجة</th></tr>${hist.slice(-5).reverse().map(h=>`<tr><td>${new Date(h.at).toLocaleString("ar-KW")}</td><td>${h.mode==="full"?"اختبار كامل":"تدريب"}</td><td>${h.correct}/${h.total} (${h.pct}%)</td></tr>`).join("")}</table>`:`<p class="mut">لا توجد محاولات بعد.</p>`}</div>`;
+}
+
+/* ================= إعداد الاختبار ================= */
+let sel=new Set();
+function viewSetup(mode){
+  if(!user)return go("login");
+  if(mode==="full"){
+    const short=TOPICS.filter(t=>BANK.filter(q=>q.topic===t.id).length<t.n);
+    $("app").innerHTML=`<div class="card"><h2>الاختبار الكامل</h2>
+    <p>20 سؤالاً · ${CONFIG.EXAM_MINUTES} دقيقة · لا يمكن إيقاف الوقت بعد البدء. يمكنك التنقل بين الأسئلة وتغيير إجاباتك قبل التسليم.</p>
+    ${short.length?`<div class="warn">تنبيه: عدد الأسئلة غير كافٍ في: ${short.map(t=>t.name).join("، ")}. سيُكمَّل الاختبار من محاور أخرى.</div>`:""}
+    <div style="margin-top:12px" class="row"><button class="b" onclick="startFull()">ابدأ الآن</button><button class="b sec" onclick="go('home')">رجوع</button></div></div>`;
+  }else{
+    sel=new Set();
+    $("app").innerHTML=`<div class="card"><h2>تدريب حسب الموضوع</h2>
+    <label>اختر موضوعاً أو أكثر</label>
+    <div class="chips" id="chips">${TOPICS.map(t=>`<span class="chip" data-id="${t.id}" onclick="tg('${t.id}')">${t.name} (${BANK.filter(q=>q.topic===t.id).length})</span>`).join("")}</div>
+    <label>عدد الأسئلة</label><select id="cnt"><option>5</option><option selected>10</option><option>15</option><option>20</option><option value="999">الكل</option></select>
+    <div style="margin-top:12px" class="row"><button class="b" onclick="startTopic()">ابدأ</button><button class="b sec" onclick="go('home')">رجوع</button></div></div>`;
+  }
+}
+function tg(id){sel.has(id)?sel.delete(id):sel.add(id);document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",sel.has(c.dataset.id)))}
+
+function mk(q){ // نسخة سؤال بخيارات مخلوطة
+  const o=shuffle(q.opts.map((t,i)=>({t,c:i===q.ans})));
+  return {id:q.id,topic:q.topic,text:q.text,img:q.img||"",expl:q.expl||"",explImg:q.explImg||"",opts:o,ans:o.findIndex(x=>x.c),pick:-1,checked:false};
+}
+function startFull(){
+  let pool=[];
+  TOPICS.forEach(t=>{pool.push(...shuffle(BANK.filter(q=>q.topic===t.id)).slice(0,t.n))});
+  if(pool.length<20){const used=new Set(pool.map(q=>q.id));pool.push(...shuffle(BANK.filter(q=>!used.has(q.id))).slice(0,20-pool.length))}
+  if(!pool.length)return alert("لا توجد أسئلة في البنك");
+  exam={mode:"full",qs:pool.map(mk),i:0,end:Date.now()+CONFIG.EXAM_MINUTES*60000,start:Date.now()};
+  go("exam");
+}
+function startTopic(){
+  if(!sel.size)return alert("اختر موضوعاً واحداً على الأقل");
+  let pool=shuffle(BANK.filter(q=>sel.has(q.topic)));
+  if(!pool.length)return alert("لا توجد أسئلة في هذه المواضيع بعد");
+  pool=pool.slice(0,+$("cnt").value);
+  exam={mode:"topic",qs:pool.map(mk),i:0,start:Date.now()};
+  go("exam");
+}
+
+/* ================= شاشة الأسئلة ================= */
+function viewExam(){
+  if(!exam)return go("home");
+  const full=exam.mode==="full";
+  if(full&&!timer){timer=setInterval(tick,1000)}
+  draw();
+}
+function tick(){
+  const left=Math.max(0,Math.round((exam.end-Date.now())/1000));
+  const el=$("tm");if(el){el.textContent=fmt(left);el.classList.toggle("low",left<300)}
+  if(left<=0){clearInterval(timer);timer=null;alert("انتهى الوقت");finish()}
+}
+const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+function draw(){
+  const full=exam.mode==="full", q=exam.qs[exam.i], n=exam.qs.length;
+  const showFb = !full && q.checked;
+  $("app").innerHTML=`
+  <div class="card"><div class="row" style="justify-content:space-between">
+    <span class="mut">سؤال ${exam.i+1} من ${n} <span class="tag">${esc(TN[q.topic]||"")}</span></span>
+    ${full?`<span class="timer" id="tm">--:--</span>`:`<button class="b sec" onclick="if(confirm('إنهاء التدريب وعرض النتيجة؟'))finish()">إنهاء</button>`}
+  </div>
+  ${full?`<div class="nav">${exam.qs.map((x,i)=>`<button class="${x.pick>=0?"ans":""} ${i===exam.i?"cur":""}" onclick="jump(${i})">${i+1}</button>`).join("")}</div>`:""}
+  <div class="q" dir="auto" style="margin-top:8px">${esc(q.text)}${q.img?`<img src="${q.img}" alt="">`:""}</div>
+  <div id="opts" style="margin-top:10px">${q.opts.map((o,i)=>{
+    let c="opt";
+    if(showFb){if(i===q.ans)c+=" ok";else if(i===q.pick)c+=" no"}else if(i===q.pick)c+=" sel";
+    return `<div class="${c}" onclick="pick(${i})"><span class="l">${L[i]}</span><span class="t" dir="${/[\u0600-\u06FF]/.test(o.t)?"rtl":"ltr"}">${esc(o.t)}</span></div>`}).join("")}</div>
+  ${showFb?(q.pick===q.ans?`<div class="expl" style="background:var(--okbg);border-color:#9fd6af">✅ إجابة صحيحة</div>`:`<div class="expl" style="background:var(--badbg);border-color:#efb3b3">❌ إجابة خاطئة. الصحيحة: ${L[q.ans]}<br>${q.expl?`<b>الشرح:</b> ${esc(q.expl)}`:`<span class="mut">لا يوجد شرح لهذا السؤال بعد.</span>`}${q.explImg?`<img src="${q.explImg}" style="max-width:100%">`:""}</div>`):""}
+  <div class="row" style="margin-top:14px;justify-content:space-between">
+    <div class="row">${full?`<button class="b sec" ${exam.i===0?"disabled":""} onclick="jump(exam.i-1)">السابق</button>`:""}
+    ${full?`<button class="b sec" ${exam.i===n-1?"disabled":""} onclick="jump(exam.i+1)">التالي</button>`:
+      (q.checked?`<button class="b" onclick="${exam.i===n-1?"finish()":"jump(exam.i+1)"}">${exam.i===n-1?"عرض النتيجة":"السؤال التالي"}</button>`:`<button class="b" ${q.pick<0?"disabled":""} onclick="check()">تحقق من الإجابة</button>`)}</div>
+    ${full?`<button class="b red" onclick="submitFull()">تسليم الاختبار</button>`:""}
+  </div></div>`;
+  if(full)tick();
+}
+function jump(i){exam.i=i;draw()}
+function pick(i){const q=exam.qs[exam.i];if(exam.mode==="topic"&&q.checked)return;q.pick=i;draw()}
+function check(){exam.qs[exam.i].checked=true;draw()}
+function submitFull(){
+  const un=exam.qs.filter(q=>q.pick<0).length;
+  if(confirm(un?`لديك ${un} سؤال بلا إجابة. تسليم الاختبار؟`:"تسليم الاختبار؟"))finish();
+}
+function finish(){
+  if(timer){clearInterval(timer);timer=null}
+  const qs=exam.qs, correct=qs.filter(q=>q.pick===q.ans).length;
+  const by={};qs.forEach(q=>{by[q.topic]=by[q.topic]||{t:0,c:0};by[q.topic].t++;if(q.pick===q.ans)by[q.topic].c++});
+  exam.done=true;
+  exam.res={correct,total:qs.length,pct:Math.round(100*correct/qs.length),by,secs:Math.round((Date.now()-exam.start)/1000)};
+  const h=S.get("qd_hist",[]);
+  const rec={email:user.email,name:user.name,at:new Date().toISOString(),mode:exam.mode,correct,total:qs.length,pct:exam.res.pct,by,secs:exam.res.secs};
+  h.push(rec);S.set("qd_hist",h);post({type:"result",...rec});
+  go("result");
+}
+
+/* ================= النتيجة ================= */
+function viewResult(){
+  if(!exam||!exam.res)return go("home");
+  const r=exam.res, full=exam.mode==="full";
+  $("app").innerHTML=`<div class="card" style="text-align:center"><h2>النتيجة</h2>
+   <div class="score">${r.correct} / ${r.total}</div><div>${r.pct}% · الزمن ${fmt(r.secs)}</div>
+   ${full?`<p style="font-weight:700;color:${r.pct>=CONFIG.PASS_PERCENT?"var(--ok)":"var(--bad)"}">${r.pct>=CONFIG.PASS_PERCENT?"ممتاز، فوق حد النجاح ("+CONFIG.PASS_PERCENT+"%)":"أقل من حد النجاح ("+CONFIG.PASS_PERCENT+"%). راجع الأخطاء وتدرّب أكثر"}</p>`:""}
+   <div class="row" style="justify-content:center"><button class="b" onclick="go('home')">الرئيسية</button><button class="b sec" onclick="go('setup','${exam.mode==="full"?"full":"topic"}')">محاولة جديدة</button></div></div>
+  <div class="card"><h3>الأداء حسب المحور</h3>${Object.entries(r.by).map(([k,v])=>`<div style="margin:8px 0"><div class="row" style="justify-content:space-between"><span>${esc(TN[k]||k)}</span><span>${v.c}/${v.t}</span></div><div class="bar"><i style="width:${100*v.c/v.t}%"></i></div></div>`).join("")}</div>
+  <div class="card"><h3>مراجعة الأسئلة</h3>${exam.qs.map((q,n)=>{const ok=q.pick===q.ans;return `<div style="border-top:1px solid var(--bd);padding:10px 0">
+    <div><b>${n+1}.</b> ${ok?"✅":"❌"} <span class="tag">${esc(TN[q.topic]||"")}</span></div>
+    <div class="q" dir="auto" style="font-size:16px">${esc(q.text)}${q.img?`<img src="${q.img}">`:""}</div>
+    <div class="mut">إجابتك: ${q.pick<0?"لم تُجب":L[q.pick]+") "+esc(q.opts[q.pick].t)} · الصحيحة: ${L[q.ans]}) ${esc(q.opts[q.ans].t)}</div>
+    ${!ok?`<div class="expl">${q.expl?esc(q.expl):"لا يوجد شرح لهذا السؤال بعد."}${q.explImg?`<img src="${q.explImg}" style="max-width:100%">`:""}</div>`:""}</div>`}).join("")}</div>`;
+}
+function viewHistory(){go("home")}
+
+/* ================= لوحة المعلم ================= */
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+function viewAdmin(){
+  if(adminOK)return adminMain();
+  const has=S.get("qd_admin",null);
+  $("app").innerHTML=`<div class="card"><h2>لوحة المعلم</h2>
+  <p class="mut">${has?"أدخل كلمة المرور.":"أول مرة: اختر كلمة مرور للوحة المعلم (تُحفظ على هذا الجهاز)."}</p>
+  <input id="pw" type="password" dir="ltr"><p id="err" style="color:var(--bad)"></p>
+  <button class="b" onclick="adminLogin()">${has?"دخول":"حفظ ودخول"}</button></div>`;
+}
+async function adminLogin(){
+  const p=$("pw").value;if(p.length<4){$("err").textContent="4 أحرف على الأقل";return}
+  const h=await sha(p),has=S.get("qd_admin",null);
+  if(!has){S.set("qd_admin",h);adminOK=true;return adminMain()}
+  if(h!==has){$("err").textContent="كلمة المرور خاطئة";return}
+  adminOK=true;adminMain();
+}
+let atab="list", draft=[], editing=null;
+function adminMain(){
+  $("app").innerHTML=`<div class="tabs">
+   ${[["list","الأسئلة"],["edit","إضافة سؤال"],["pdf","استيراد من PDF"],["data","بيانات وتصدير"]].map(t=>`<button class="b ${atab===t[0]?"":"sec"}" onclick="atab='${t[0]}';${t[0]!=="edit"?"editing=null;":""}adminMain()">${t[1]}</button>`).join("")}</div><div id="at"></div>`;
+  ({list:aList,edit:aEdit,pdf:aPdf,data:aData})[atab]();
+}
+function persist(){S.set("qd_bank",BANK)}
+function aList(){
+  const f=window._f||"";
+  $("at").innerHTML=`<div class="card"><div class="row"><select id="ft" onchange="window._f=this.value;aList()" style="max-width:260px"><option value="">كل المحاور (${BANK.length})</option>${TOPICS.map(t=>`<option value="${t.id}" ${f===t.id?"selected":""}>${t.name} (${BANK.filter(q=>q.topic===t.id).length})</option>`).join("")}</select></div>
+  ${BANK.filter(q=>!f||q.topic===f).map(q=>`<div class="q-item"><div><span class="tag">${esc(TN[q.topic]||"")}</span><div class="tx" dir="auto">${esc(q.text)}${q.img?" 🖼":""}</div></div><div class="row" style="flex-shrink:0"><button class="b sec" onclick="editQ('${q.id}')">تعديل</button><button class="b red" onclick="delQ('${q.id}')">حذف</button></div></div>`).join("")||`<p class="mut">لا توجد أسئلة</p>`}</div>`;
+}
+function editQ(id){editing=BANK.find(q=>q.id===id);atab="edit";adminMain()}
+function delQ(id){if(confirm("حذف السؤال؟")){BANK=BANK.filter(q=>q.id!==id);persist();aList()}}
+function qForm(q,idx){ // نموذج مشترك للإضافة والمراجعة
+  const p=idx==null?"":"d"+idx+"_";
+  return `<label>المحور</label><select id="${p}tp">${TOPICS.map(t=>`<option value="${t.id}" ${q.topic===t.id?"selected":""}>${t.name}</option>`).join("")}</select>
+  <label>نص السؤال</label><textarea id="${p}tx" dir="auto">${esc(q.text)}</textarea>
+  ${q.img?`<div><img src="${q.img}" style="max-width:100%;border-radius:8px"><button class="b sec" onclick="${idx==null?"editing.img='';aEdit()":`draft[${idx}].img='';aPdfList()`}">إزالة الصورة</button></div>`:""}
+  ${[0,1,2,3].map(i=>`<label>الخيار ${L[i]} <input type="radio" name="${p}ans" value="${i}" ${q.ans===i?"checked":""} style="width:auto"> صحيح</label><input id="${p}o${i}" dir="auto" value="${esc((q.opts||[])[i]||"")}">`).join("")}
+  <label>شرح الحل (يظهر عند الإجابة الخطأ)</label><textarea id="${p}ex" dir="auto">${esc(q.expl||"")}</textarea>`;
+}
+function readForm(idx,base){
+  const p=idx==null?"":"d"+idx+"_";
+  const a=document.querySelector(`input[name="${p}ans"]:checked`);
+  return {...base,topic:$(p+"tp").value,text:$(p+"tx").value.trim(),opts:[0,1,2,3].map(i=>$(p+"o"+i).value.trim()),ans:a?+a.value:-1,expl:$(p+"ex").value.trim()};
+}
+function validQ(q){
+  if(!q.text&&!q.img)return "اكتب نص السؤال أو أضف صورة";
+  if(q.opts.some(o=>!o))return "املأ الخيارات الأربعة";
+  if(q.ans<0)return "حدد الإجابة الصحيحة";
+  return "";
+}
+function aEdit(){
+  const q=editing||{topic:TOPICS[0].id,text:"",opts:["","","",""],ans:-1,expl:""};
+  $("at").innerHTML=`<div class="card"><h3>${editing?"تعديل سؤال":"سؤال جديد"}</h3>${qForm(q)}
+  <label>صورة للسؤال (اختياري، مثل شكل هندسي)</label><input type="file" accept="image/*" onchange="imgPick(this)">
+  <p id="err" style="color:var(--bad)"></p>
+  <button class="b" onclick="saveQ()">حفظ</button></div>`;
+}
+function imgPick(inp){
+  const f=inp.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas"),s=Math.min(1,900/im.width);c.width=im.width*s;c.height=im.height*s;c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    const cur=readForm(null,editing||{});editing={...cur,id:(editing&&editing.id)||undefined,img:c.toDataURL("image/jpeg",.8)};aEdit()};im.src=r.result};r.readAsDataURL(f);
+}
+function saveQ(){
+  const q=readForm(null,editing||{});q.img=(editing&&editing.img)||"";
+  const e=validQ(q);if(e){$("err").textContent=e;return}
+  if(q.id){const i=BANK.findIndex(x=>x.id===q.id);BANK[i]=q}else{q.id="q"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);BANK.push(q)}
+  persist();editing=null;atab="list";adminMain();
+}
+
+/* ---------- استيراد PDF ---------- */
+let pdfDoc=null, pdfPage=1, snipTarget=null;
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error("تعذر تحميل "+src));document.head.appendChild(s)})}
+async function ensurePdfjs(){
+  if(window.pdfjsLib)return;
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+function aPdf(){
+  $("at").innerHTML=`<div class="card"><h3>استيراد أسئلة من ملف PDF</h3>
+  <p class="mut">اختر الملف، ثم اضغط «استخراج الأسئلة من النص». يتعرف الموقع على الأسئلة المرقمة وخياراتها (أ ب ج د أو A B C D). راجع كل سؤال وحدّد الإجابة الصحيحة قبل الحفظ. للأسئلة التي فيها رموز رياضية أو أشكال، استخدم «قص صورة من الصفحة».</p>
+  <input type="file" id="pf" accept="application/pdf" onchange="openPdf(this)">
+  <div id="pinfo" class="mut" style="margin-top:8px"></div>
+  <div id="pctl" style="display:none;margin-top:10px" class="row">
+   <label style="margin:0">من صفحة</label><input id="p1" type="number" min="1" value="1" style="width:80px">
+   <label style="margin:0">إلى</label><input id="p2" type="number" min="1" value="1" style="width:80px">
+   <button class="b" onclick="extractText(false)">استخراج الأسئلة من النص</button>
+   <button class="b sec" onclick="extractText(true)">استخراج بالتعرف الضوئي OCR (للملفات الممسوحة)</button>
+   <button class="b sec" onclick="showPage()">عرض / قص صورة من الصفحة</button></div>
+  <div id="pview"></div></div>
+  <div id="plist"></div>`;
+  aPdfList();
+}
+async function openPdf(inp){
+  const f=inp.files[0];if(!f)return;
+  $("pinfo").textContent="جارٍ فتح الملف...";
+  try{await ensurePdfjs();pdfDoc=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+    $("pinfo").textContent=`عدد الصفحات: ${pdfDoc.numPages}`;$("pctl").style.display="flex";$("p2").value=Math.min(pdfDoc.numPages,5);$("p2").max=pdfDoc.numPages;$("p1").max=pdfDoc.numPages;pdfPage=1}
+  catch(e){$("pinfo").textContent="تعذر فتح الملف: "+e.message+" (يلزم اتصال بالإنترنت لتحميل مكتبة PDF)"}
+}
+async function pageLines(n){
+  const pg=await pdfDoc.getPage(n),tc=await pg.getTextContent(),rows=[];
+  tc.items.forEach(it=>{if(!it.str.trim())return;const y=Math.round(it.transform[5]/4);let r=rows.find(r=>Math.abs(r.y-y)<=1);if(!r){r={y,items:[]};rows.push(r)}r.items.push({x:it.transform[4],s:it.str})});
+  rows.sort((a,b)=>b.y-a.y);
+  return rows.map(r=>{r.items.sort((a,b)=>a.x-b.x);const rtl=/[\u0600-\u06FF]/.test(r.items.map(i=>i.s).join(""));if(rtl)r.items.reverse();return r.items.map(i=>i.s).join(" ").replace(/\s+/g," ").trim()});
+}
+async function ocrPage(n){
+  if(!window.Tesseract)await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js");
+  const pg=await pdfDoc.getPage(n),vp=pg.getViewport({scale:2.2}),c=document.createElement("canvas");c.width=vp.width;c.height=vp.height;
+  await pg.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;
+  const r=await Tesseract.recognize(c,"ara+eng");return r.data.text.split("\n").map(s=>s.trim()).filter(Boolean);
+}
+async function extractText(ocr){
+  const a=+$("p1").value,b=Math.min(+$("p2").value,pdfDoc.numPages);let lines=[];
+  for(let n=a;n<=b;n++){$("pinfo").textContent=(ocr?"OCR صفحة ":"قراءة صفحة ")+n+"...";
+    try{lines.push(...(ocr?await ocrPage(n):await pageLines(n)))}catch(e){$("pinfo").textContent="خطأ: "+e.message;return}}
+  const qs=parseQuestions(lines);
+  $("pinfo").textContent=`تم استخراج ${qs.length} سؤالاً. راجعها بالأسفل قبل الحفظ.`+(qs.length?"":" لم يُعثر على أسئلة مرقمة. جرّب OCR أو أضف الأسئلة يدوياً/بالقص.");
+  draft.push(...qs);aPdfList();
+}
+function parseQuestions(lines){
+  const out=[],qre=/^\(?(\d{1,3})\s*[\.\)\-–:]\s*(.*)$/;let cur=null;
+  const optre=/(?:^|\s)\(?([أابجدabcdABCD])\s*[\)\.\-–]\s+/g;
+  const flush=()=>{if(!cur)return;out.push(finish(cur));cur=null};
+  lines.forEach(l=>{const m=l.match(qre);if(m&&(!cur||+m[1]!==cur.num)&&!/^[أابجدABCD]$/.test(m[1])){flush();cur={num:+m[1],t:m[2]}}else if(cur)cur.t+="\n"+l});
+  flush();
+  function finish(c){
+    let t=c.t,ans=-1;
+    const am=t.match(/(?:الإجابة|الاجابة|Answer)\s*(?:الصحيحة)?\s*[:：]?\s*\(?([أابجدA-Da-d])\)?/);
+    if(am){const k="أابجدabcdABCD".indexOf(am[1]);ans=({0:0,1:0,2:1,3:2,4:3,5:0,6:1,7:2,8:3,9:0,10:1,11:2,12:3})[k];t=t.replace(am[0],"")}
+    const flat=t.replace(/\n/g," ");const idx=[];let m;optre.lastIndex=0;
+    while((m=optre.exec(flat))){idx.push({l:m[1],s:m.index,e:optre.lastIndex})}
+    const ord=x=>({"أ":0,"ا":0,"a":0,"A":0,"ب":1,"b":1,"B":1,"ج":2,"c":2,"C":2,"د":3,"d":3,"D":3})[x];
+    let seq=[],want=0;idx.forEach(o=>{if(ord(o.l)===want){seq.push(o);want++}});
+    let text=t.trim(),opts=["","","",""];
+    if(seq.length>=2){text=flat.slice(0,seq[0].s).trim();seq.forEach((o,i)=>{opts[ord(o.l)]=flat.slice(o.e,i+1<seq.length?seq[i+1].s:undefined).trim()})}
+    return {topic:TOPICS[0].id,text,opts,ans,expl:"",img:"",id:"q"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)};
+  }
+  return out;
+}
+function aPdfList(){
+  const el=$("plist");if(!el)return;
+  el.innerHTML=draft.length?`<div class="card"><h3>مسودة الأسئلة المستخرجة (${draft.length})</h3>
+  <p class="mut">حدّد المحور والإجابة الصحيحة واكتب الشرح لكل سؤال، ثم احفظه. الأسئلة التي لا تحفظها لن تدخل البنك.</p>
+  ${draft.map((q,i)=>`<div class="card" style="background:#fafbfe"><div class="row" style="justify-content:space-between"><b>مسودة ${i+1}</b><span class="row"><button class="b sec" onclick="snipFor(${i})">قص صورة من الصفحة</button><button class="b red" onclick="draft.splice(${i},1);aPdfList()">حذف</button></span></div>${qForm(q,i)}<p id="derr${i}" style="color:var(--bad)"></p><button class="b" onclick="saveDraft(${i})">حفظ في البنك</button></div>`).join("")}
+  <button class="b" onclick="saveAllDrafts()">حفظ كل المسودات الصالحة</button></div>`:"";
+}
+function syncDrafts(){draft=draft.map((q,i)=>$("d"+i+"_tx")?readForm(i,q):q)}
+function saveDraft(i){syncDrafts();const q=draft[i],e=validQ(q);if(e){$("derr"+i).textContent=e;return}BANK.push(q);persist();draft.splice(i,1);aPdfList()}
+function saveAllDrafts(){syncDrafts();const keep=[];let n=0;draft.forEach(q=>{if(validQ(q))keep.push(q);else{BANK.push(q);n++}});persist();draft=keep;aPdfList();alert(`تم حفظ ${n} سؤالاً. المتبقي (${keep.length}) ناقص: يحتاج خيارات أو إجابة صحيحة.`)}
+async function snipFor(i){syncDrafts();snipTarget=i;if(!pdfDoc)return alert("افتح ملف PDF أولاً");showPage();$("pview").scrollIntoView()}
+async function showPage(){
+  const v=$("pview");v.innerHTML=`<div class="row" style="margin:10px 0"><button class="b sec" onclick="pgGo(-1)">الصفحة السابقة</button><span id="pgn"></span><button class="b sec" onclick="pgGo(1)">الصفحة التالية</button><span class="mut">${snipTarget!=null?"اسحب بالإصبع/الفأرة لتحديد منطقة السؤال، وسيُرفق بمسودة "+(snipTarget+1):"اسحب لتحديد منطقة، ثم ستُنشأ مسودة جديدة بالصورة"}</span></div><div class="canvaswrap" id="cw"><canvas id="cv"></canvas><div class="sel-rect" id="sr" style="display:none"></div></div>`;
+  await renderPg();setupSnip();
+}
+async function renderPg(){
+  const pg=await pdfDoc.getPage(pdfPage),vp=pg.getViewport({scale:1.6}),c=$("cv");c.width=vp.width;c.height=vp.height;
+  await pg.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;$("pgn").textContent=`صفحة ${pdfPage} / ${pdfDoc.numPages}`;
+}
+async function pgGo(d){pdfPage=Math.min(pdfDoc.numPages,Math.max(1,pdfPage+d));await renderPg()}
+function setupSnip(){
+  const c=$("cv"),r=$("sr");let st=null;
+  const pos=e=>{const b=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-b.left)*c.width/b.width,y:(t.clientY-b.top)*c.height/b.height,dx:t.clientX-b.left,dy:t.clientY-b.top}};
+  const down=e=>{e.preventDefault();st=pos(e);r.style.display="block"};
+  const move=e=>{if(!st)return;e.preventDefault();const p=pos(e);r.style.left=Math.min(st.dx,p.dx)+"px";r.style.top=Math.min(st.dy,p.dy)+"px";r.style.width=Math.abs(p.dx-st.dx)+"px";r.style.height=Math.abs(p.dy-st.dy)+"px"};
+  const up=e=>{if(!st)return;const p=pos(e.changedTouches?{touches:e.changedTouches}:e);const x=Math.min(st.x,p.x),y=Math.min(st.y,p.y),w=Math.abs(p.x-st.x),h=Math.abs(p.y-st.y);st=null;r.style.display="none";
+    if(w<20||h<20)return;const o=document.createElement("canvas");o.width=w;o.height=h;o.getContext("2d").drawImage(c,x,y,w,h,0,0,w,h);
+    const url=o.toDataURL("image/jpeg",.85);
+    if(snipTarget!=null&&draft[snipTarget]){draft[snipTarget].img=url}
+    else{draft.push({topic:TOPICS[0].id,text:"",opts:["","","",""],ans:-1,expl:"",img:url,id:"q"+Date.now().toString(36)});}
+    snipTarget=null;aPdfList();};
+  c.addEventListener("mousedown",down);c.addEventListener("mousemove",move);window.addEventListener("mouseup",up,{once:false});
+  c.addEventListener("touchstart",down,{passive:false});c.addEventListener("touchmove",move,{passive:false});c.addEventListener("touchend",up);
+}
+
+/* ---------- بيانات ---------- */
+function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click()}
+function aData(){
+  const regs=S.get("qd_regs",[]),hist=S.get("qd_hist",[]);
+  $("at").innerHTML=`<div class="card"><h3>نشر الأسئلة للطلاب</h3>
+  <p class="mut">الأسئلة التي تضيفها هنا تُحفظ على هذا المتصفح فقط. لتظهر لكل الطلاب: اضغط «تنزيل questions.json» ثم ارفع الملف بجانب index.html في موقعك (نفس المجلد).</p>
+  <div class="row"><button class="b" onclick="dl('questions.json',JSON.stringify(BANK),'application/json')">تنزيل questions.json (${BANK.length} سؤال)</button>
+  <label class="b sec" style="margin:0;cursor:pointer">استيراد questions.json<input type="file" accept=".json" style="display:none" onchange="impJson(this)"></label>
+  <button class="b red" onclick="if(confirm('مسح كل الأسئلة المحفوظة هنا والعودة للأسئلة التجريبية؟')){localStorage.removeItem('qd_bank');loadBank().then(()=>aData())}">إعادة ضبط</button></div></div>
+  <div class="card"><h3>الطلاب المسجلون على هذا الجهاز (${regs.length})</h3>
+  <p class="mut">لجمع تسجيلات ونتائج كل الطلاب من أجهزتهم ضع رابط WEBHOOK في أعلى ملف index.html (Google Apps Script يكتب في Google Sheet).</p>
+  <button class="b sec" onclick="csv()">تنزيل النتائج CSV</button>
+  <table style="margin-top:8px"><tr><th>الاسم</th><th>البريد</th><th>محاولات</th></tr>${regs.map(r=>`<tr><td>${esc(r.name)}</td><td dir="ltr">${esc(r.email)}</td><td>${hist.filter(h=>h.email===r.email).length}</td></tr>`).join("")}</table></div>`;
+}
+function impJson(inp){const f=inp.files[0];if(!f)return;f.text().then(t=>{try{const j=JSON.parse(t);if(!Array.isArray(j))throw 0;BANK=j;persist();aData();alert("تم استيراد "+j.length+" سؤالاً")}catch(e){alert("ملف غير صالح")}})}
+function csv(){
+  const h=S.get("qd_hist",[]);
+  const rows=[["name","email","date","mode","correct","total","percent"],...h.map(x=>[x.name,x.email,x.at,x.mode,x.correct,x.total,x.pct])];
+  dl("results.csv","\ufeff"+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n"),"text/csv");
+}
+
+/* ================= بدء ================= */
+loadBank().then(()=>go(user?"home":"login"));
+</script>
+</body>
+</html>
