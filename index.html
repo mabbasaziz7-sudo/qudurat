@@ -207,8 +207,8 @@ function viewSetup(mode){
 function tg(id){sel.has(id)?sel.delete(id):sel.add(id);document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",sel.has(c.dataset.id)))}
 
 function mk(q){ // نسخة سؤال بخيارات مخلوطة
-  const o=shuffle(q.opts.map((t,i)=>({t,c:i===q.ans})));
-  return {id:q.id,topic:q.topic,text:q.text,img:q.img||"",expl:q.expl||"",explImg:q.explImg||"",opts:o,ans:o.findIndex(x=>x.c),pick:-1,checked:false};
+  const o0=q.opts.map((t,i)=>({t,c:i===q.ans}));const o=q.fixed?o0:shuffle(o0);
+  return {id:q.id,fixed:!!q.fixed,topic:q.topic,text:q.text,img:q.img||"",expl:q.expl||"",explImg:q.explImg||"",opts:o,ans:o.findIndex(x=>x.c),pick:-1,checked:false};
 }
 function startFull(){
   let pool=[];
@@ -335,7 +335,7 @@ function qForm(q,idx){ // نموذج مشترك للإضافة والمراجع�
   return `<label>المحور</label><select id="${p}tp">${TOPICS.map(t=>`<option value="${t.id}" ${q.topic===t.id?"selected":""}>${t.name}</option>`).join("")}</select>
   <label>نص السؤال</label><textarea id="${p}tx" dir="auto">${esc(q.text)}</textarea>
   ${q.img?`<div><img src="${q.img}" style="max-width:100%;border-radius:8px"><button class="b sec" onclick="${idx==null?"editing.img='';aEdit()":`draft[${idx}].img='';aPdfList()`}">إزالة الصورة</button></div>`:""}
-  ${[0,1,2,3].map(i=>`<label>الخيار ${L[i]} <input type="radio" name="${p}ans" value="${i}" ${q.ans===i?"checked":""} style="width:auto"> صحيح</label><input id="${p}o${i}" dir="auto" value="${esc((q.opts||[])[i]||"")}">`).join("")}
+  ${[0,1,2,3].map(i=>`<label>${q.fixed?"الإجابة":"الخيار"} ${L[i]} <input type="radio" name="${p}ans" value="${i}" ${q.ans===i?"checked":""} style="width:auto"> صحيح</label><input id="${p}o${i}" ${q.fixed?'type="hidden"':""} dir="auto" value="${esc((q.opts||[])[i]||"")}">`).join("")}
   <label>شرح الحل (يظهر عند الإجابة الخطأ)</label><textarea id="${p}ex" dir="auto">${esc(q.expl||"")}</textarea>`;
 }
 function readForm(idx,base){
@@ -345,7 +345,7 @@ function readForm(idx,base){
 }
 function validQ(q){
   if(!q.text&&!q.img)return "اكتب نص السؤال أو أضف صورة";
-  if(q.opts.some(o=>!o))return "املأ الخيارات الأربعة";
+  if(!q.fixed&&q.opts.some(o=>!o))return "املأ الخيارات الأربعة";
   if(q.ans<0)return "حدد الإجابة الصحيحة";
   return "";
 }
@@ -378,13 +378,14 @@ async function ensurePdfjs(){
 }
 function aPdf(){
   $("at").innerHTML=`<div class="card"><h3>استيراد أسئلة من ملف PDF</h3>
-  <p class="mut">اختر الملف، ثم اضغط «استخراج الأسئلة من النص». يتعرف الموقع على الأسئلة المرقمة وخياراتها (أ ب ج د أو A B C D). راجع كل سؤال وحدّد الإجابة الصحيحة قبل الحفظ. للأسئلة التي فيها رموز رياضية أو أشكال، استخدم «قص صورة من الصفحة».</p>
+  <p class="mut">اختر الملف ثم اضغط «استخراج ذكي»: يقصّ الموقع كل سؤال مرقّم كصورة كاملة بمعادلاته وأشكاله وخياراته، فلا تتشوه الرموز الرياضية. بعدها تحدد الإجابة الصحيحة لكل سؤال. يتعرف الموقع على الأسئلة المرقمة وخياراتها (أ ب ج د أو A B C D). راجع كل سؤال وحدّد الإجابة الصحيحة قبل الحفظ. للأسئلة التي فيها رموز رياضية أو أشكال، استخدم «قص صورة من الصفحة».</p>
   <input type="file" id="pf" accept="application/pdf" onchange="openPdf(this)">
   <div id="pinfo" class="mut" style="margin-top:8px"></div>
   <div id="pctl" style="display:none;margin-top:10px" class="row">
    <label style="margin:0">من صفحة</label><input id="p1" type="number" min="1" value="1" style="width:80px">
    <label style="margin:0">إلى</label><input id="p2" type="number" min="1" value="1" style="width:80px">
-   <button class="b" onclick="extractText(false)">استخراج الأسئلة من النص</button>
+   <button class="b" onclick="extractSmart()">استخراج ذكي: قص كل سؤال كصورة (الأفضل للرياضيات)</button>
+   <button class="b sec" onclick="extractText(false)">استخراج الأسئلة كنص</button>
    <button class="b sec" onclick="extractText(true)">استخراج بالتعرف الضوئي OCR (للملفات الممسوحة)</button>
    <button class="b sec" onclick="showPage()">عرض / قص صورة من الصفحة</button></div>
   <div id="pview"></div></div>
@@ -438,6 +439,91 @@ function parseQuestions(lines){
   }
   return out;
 }
+/* ---------- استخراج ذكي: قص كل سؤال كصورة ---------- */
+const AR_DIG={"٠":0,"١":1,"٢":2,"٣":3,"٤":4,"٥":5,"٦":6,"٧":7,"٨":8,"٩":9,"۰":0,"۱":1,"۲":2,"۳":3,"۴":4,"۵":5,"۶":6,"۷":7,"۸":8,"۹":9};
+function normDigits(s){return s.replace(/[٠-٩۰-۹]/g,c=>AR_DIG[c])}
+function lis(arr){ // أطول سلسلة أرقام متزايدة بقفزات صغيرة (arr مرتبة بالموضع)
+  const n=arr.length,d=new Array(n).fill(1),p=new Array(n).fill(-1),js=new Array(n).fill(0);let b=0;
+  for(let i=0;i<n;i++){for(let j=0;j<i;j++){const df=arr[i].num-arr[j].num;if(df>=1&&df<=2){const l=d[j]+1,jj=js[j]+df-1;if(l>d[i]||(l===d[i]&&jj<js[i])){d[i]=l;p[i]=j;js[i]=jj}}}
+    if(d[i]>d[b]||(d[i]===d[b]&&js[i]<js[b]))b=i}
+  const out=[];for(let i=b;i>=0&&n;i=p[i])out.push(arr[i]);return out.reverse();
+}
+const MARK_ONLY=/^[\(\[]?(\d{1,3})[\)\]]?\s*[\.\-–:\)،]?$/, MARK_LEAD=/^[\(\[]?(\d{1,3})\s*[\.\-–:\)]\s*\S/;
+function cleanStr(s){return normDigits(s.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,"").trim())}
+function findMarkers(items,W,H){
+  const cand=[];
+  items.forEach(it=>{const s=cleanStr(it.str);if(!s)return;let m=s.match(MARK_ONLY)||s.match(MARK_LEAD);if(!m)return;
+    const num=+m[1];if(num<1||num>300)return;if(it.y<H*.04||it.y>H*.96)return;cand.push({num,x:it.x,xr:it.x+it.w,y:it.y,h:it.h})});
+  if(cand.length<2)return {cols:[],markers:[]};
+  const groups=[],tol=W*.012;
+  [["x",c=>c.x],["xr",c=>c.xr]].forEach(([k,f])=>{
+    const sorted=cand.slice().sort((a,b)=>f(a)-f(b)),cl=[];
+    sorted.forEach(c=>{const g=cl[cl.length-1];if(g&&f(c)-f(g[g.length-1])<=tol)g.push(c);else cl.push([c])});
+    cl.forEach(g=>{g.sort((a,b)=>a.y-b.y);const l=lis(g);if(l.length>=2)groups.push({k,items:l,x:l.reduce((s,c)=>s+f(c),0)/l.length})})});
+  if(!groups.length)return {cols:[],markers:[]};
+  groups.sort((a,b)=>b.items.length-a.items.length);
+  const sel=[groups[0]];
+  groups.slice(1).forEach(g=>{if(g.items.length>=Math.max(2,sel[0].items.length*.5)&&sel.every(s=>Math.abs(s.x-g.x)>W*.3)&&!g.items.some(c=>sel.some(s=>s.items.includes(c))))sel.push(g)});
+  sel.sort((a,b)=>b.x-a.x);
+  return {cols:sel,markers:sel.flatMap(s=>s.items)};
+}
+function trimCanvas(c,pad){
+  const x=c.getContext("2d"),w=c.width,h=c.height,d=x.getImageData(0,0,w,h).data;
+  let t=h,b=-1,l=w,r=-1;
+  for(let y=0;y<h;y++){for(let xx=0;xx<w;xx++){const i=(y*w+xx)*4;if(d[i]+d[i+1]+d[i+2]<690){if(y<t)t=y;if(y>b)b=y;if(xx<l)l=xx;if(xx>r)r=xx}}}
+  if(b<0)return null;
+  t=Math.max(0,t-pad);b=Math.min(h-1,b+pad);l=Math.max(0,l-pad);r=Math.min(w-1,r+pad);
+  const o=document.createElement("canvas");let ow=r-l+1,oh=b-t+1;o.width=ow;o.height=oh;o.getContext("2d").drawImage(c,l,t,ow,oh,0,0,ow,oh);return o;
+}
+function cropToUrl(page,x,y,w,h){
+  x=Math.max(0,Math.round(x));y=Math.max(0,Math.round(y));w=Math.min(page.width-x,Math.round(w));h=Math.min(page.height-y,Math.round(h));
+  if(w<30||h<20)return null;
+  const o=document.createElement("canvas");o.width=w;o.height=h;const cx=o.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,w,h);cx.drawImage(page,x,y,w,h,0,0,w,h);
+  let t=trimCanvas(o,8);if(!t||t.height<24)return null;
+  const MAXW=900;if(t.width>MAXW){const s=MAXW/t.width,u=document.createElement("canvas");u.width=MAXW;u.height=Math.round(t.height*s);const g=u.getContext("2d");g.imageSmoothingQuality="high";g.drawImage(t,0,0,u.width,u.height);t=u}
+  return t.toDataURL("image/jpeg",.72);
+}
+function gapBlocks(page){ // احتياطي: تقسيم الصفحة بالفراغات الأفقية
+  const w=page.width,h=page.height,d=page.getContext("2d").getImageData(0,0,w,h).data,ink=[];
+  for(let y=0;y<h;y++){let n=0;for(let x=0;x<w;x+=2){const i=(y*w+x)*4;if(d[i]+d[i+1]+d[i+2]<600)n++}ink.push(n>1)}
+  const blocks=[],gap=Math.round(h*.02);let s=-1,last=-1;
+  for(let y=0;y<h;y++){if(ink[y]){if(s<0)s=y;last=y}else if(s>=0&&y-last>gap){blocks.push([s,last]);s=-1}}
+  if(s>=0)blocks.push([s,last]);
+  return blocks.filter(b=>b[1]-b[0]>h*.025);
+}
+async function smartPageQuestions(n,SC){
+  const pg=await pdfDoc.getPage(n),vp=pg.getViewport({scale:SC}),c=document.createElement("canvas");c.width=Math.round(vp.width);c.height=Math.round(vp.height);
+  const cx=c.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,c.width,c.height);
+  await pg.render({canvasContext:cx,viewport:vp}).promise;
+  const tc=await pg.getTextContent();
+  const items=tc.items.filter(it=>it.str&&it.str.trim()).map(it=>{const p=vp.convertToViewportPoint(it.transform[4],it.transform[5]);const h=Math.abs(it.height||it.transform[3]||10)*SC;return{str:it.str,x:p[0],y:p[1]-h,w:(it.width||0)*SC,h}});
+  const {cols,markers}=findMarkers(items,c.width,c.height);
+  const out=[];
+  if(markers.length>=2){
+    const xs=cols.map(s=>s.x),bounds=cols.map((s,i)=>{ // حدود كل عمود
+      const left=i===cols.length-1?0:(xs[i]+xs[i+1])/2, right=i===0?c.width:(xs[i-1]+xs[i])/2;return[left,right]});
+    cols.forEach((col,ci)=>{
+      const [L0,R0]=bounds[ci],its=col.items.slice().sort((a,b)=>a.y-b.y);
+      its.forEach((m,i)=>{
+        const top=m.y-m.h*1.3,bot=i+1<its.length?its[i+1].y-its[i+1].h*1.3:c.height*.97;
+        const url=cropToUrl(c,L0,top,R0-L0,bot-top);if(url)out.push({url,num:m.num,col:ci,y:m.y})});
+    });
+    if(cols.length>1)out.sort((a,b)=>a.col-b.col||a.y-b.y);
+    return {qs:out,mode:"markers"};
+  }
+  gapBlocks(c).forEach((b,i)=>{const url=cropToUrl(c,0,b[0]-4,c.width,b[1]-b[0]+8);if(url)out.push({url,num:i+1})});
+  return {qs:out,mode:"gaps"};
+}
+async function extractSmart(){
+  const a=+$("p1").value,b=Math.min(+$("p2").value,pdfDoc.numPages);let total=0,modes=new Set();
+  for(let n=a;n<=b;n++){$("pinfo").textContent="تقطيع صفحة "+n+" من "+b+"...";
+    try{const r=await smartPageQuestions(n,1.7);modes.add(r.mode);
+      r.qs.forEach(q=>{draft.push({topic:TOPICS[0].id,text:"",opts:["","","",""],ans:-1,expl:"",img:q.url,fixed:true,id:"q"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)});total++});
+    }catch(e){$("pinfo").textContent="خطأ في صفحة "+n+": "+e.message;return}}
+  $("pinfo").textContent=total?`تم قص ${total} سؤالاً كصور (الأسئلة تظهر للطالب كما في الملف بالرموز والأشكال). لكل سؤال: اختر المحور والإجابة الصحيحة وأضف الشرح ثم احفظ.`+(modes.has("gaps")?" بعض الصفحات لا فيها ترقيم واضح فقُسّمت حسب الفراغات، راجعها.":""):"لم يُعثر على أسئلة في هذه الصفحات. جرّب «عرض / قص صورة من الصفحة».";
+  aPdfList();
+}
+
 function aPdfList(){
   const el=$("plist");if(!el)return;
   el.innerHTML=draft.length?`<div class="card"><h3>مسودة الأسئلة المستخرجة (${draft.length})</h3>
